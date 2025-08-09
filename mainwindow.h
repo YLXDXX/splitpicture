@@ -43,7 +43,7 @@ private:
 };
 
 
-
+enum ResizeEdge { None, Left, Right, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight };
 class DrawingCanvas : public QWidget
 {
     Q_OBJECT
@@ -56,11 +56,13 @@ public:
     QRect getImageDisplayRect(); // 计算保持宽高比的图片显示区域
     QPointF windowToImage(const QPoint &windowPos); // 将窗口坐标转换为图片坐标
     QPoint imageToWindow(const QPointF &imagePos); // 将图片坐标转换为窗口坐标
+    ResizeEdge getResizeEdge(const QPointF &pos); // 检测鼠标在哪个边框上
+    void setCursorForEdge(ResizeEdge edge); // 根据边鼠标位置设置鼠标光标
 protected:
     void paintEvent(QPaintEvent *event) override ; //窗口中显示界面绘制
-    void mousePressEvent(QMouseEvent *event) override; //鼠标行为：选中矩形、绘制新矩形、移动图片、右键菜单
-    void mouseMoveEvent(QMouseEvent *event) override; //鼠标行为：拖动矩形、移动图片
-    void mouseReleaseEvent(QMouseEvent *event) override; //鼠标行为：左键释放后绘制新矩形
+    void mousePressEvent(QMouseEvent *event) override; //鼠标按键按下行为
+    void mouseMoveEvent(QMouseEvent *event) override; //鼠标移动行为
+    void mouseReleaseEvent(QMouseEvent *event) override; //鼠标按键释放行为
     void wheelEvent(QWheelEvent *event) override; //滚轮行为：放大缩小视图
     void resizeEvent(QResizeEvent *event) override; //窗口大小改变：居中显示
 private:
@@ -83,6 +85,12 @@ private:
     QColor backgroundColor;
     QString fileName="";
     double zoomFactor = 1.0;
+    ResizeEdge m_resizeEdge = None;
+    const int edgeMargin = 5; // 边框检测灵敏度
+    bool isRecResizing = false;
+    bool isMoveToRecEdge=false;
+    QRectF resizeOriginalRect;
+    int minimumRecLength=10; //矩形长宽的最小长度
 };
 
 
