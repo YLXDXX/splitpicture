@@ -34,7 +34,6 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
 private slots:
 
 private:
@@ -49,15 +48,18 @@ class DrawingCanvas : public QWidget
     Q_OBJECT
 public:
     DrawingCanvas(QWidget *parent = nullptr); //构建函数，初始化
+    QPointF windowToImage(const QPoint &windowPos); // 将窗口坐标转换为图片坐标
+    QPoint imageToWindow(const QPointF &imagePos); // 将图片坐标转换为窗口坐标
+    ResizeEdge getResizeEdge(const QPointF &pos); // 检测鼠标在所选矩形的哪个边上
+    QRect getImageDisplayRect(); // 计算保持宽高比的图片显示区域
+    void setCursorForEdge(ResizeEdge edge); // 根据边鼠标位置设置鼠标光标
     void deleteSelectedRectangle(); //删除矩形框
     void deleteAllRectangle(); //删除所有矩形框
     void loadBackgroundImage(); //加载图片并显示
-    void splitImageByRects(void); //利用画出的矩形切割图片
-    QRect getImageDisplayRect(); // 计算保持宽高比的图片显示区域
-    QPointF windowToImage(const QPoint &windowPos); // 将窗口坐标转换为图片坐标
-    QPoint imageToWindow(const QPointF &imagePos); // 将图片坐标转换为窗口坐标
-    ResizeEdge getResizeEdge(const QPointF &pos); // 检测鼠标在哪个边框上
-    void setCursorForEdge(ResizeEdge edge); // 根据边鼠标位置设置鼠标光标
+    void splitImageByRects(const cv::Mat &Image,const QString imagePath); //利用画出的矩形切割图片
+    QRectF imgContentRect(const cv::Mat &img); //返回图片去除白边后的内容区域
+    void removeWhiteBorder(const cv::Mat &Image); //去除选中矩形的白边
+    void removeAllWhiteBorder(const cv::Mat &Image); //去除所有创建矩形所的白边
 protected:
     void paintEvent(QPaintEvent *event) override ; //窗口中显示界面绘制
     void mousePressEvent(QMouseEvent *event) override; //鼠标按键按下行为
@@ -81,6 +83,8 @@ private:
     QAction *loadImageAction;
     QAction *resetZoomAction;
     QAction *splitPictureAction;
+    QAction *removeWhiteAction;
+    QAction *removeAllWhiteAction;
     QPixmap backgroundImage;
     QColor backgroundColor;
     QString fileName="";
@@ -90,7 +94,10 @@ private:
     bool isRecResizing = false;
     bool isMoveToRecEdge=false;
     QRectF resizeOriginalRect;
-    int minimumRecLength=10; //矩形长宽的最小长度
+    const int minimumRecLength=10; //矩形长宽的最小长度
+    const int removeWhitePadding=0;
+    const int removeWhiteThreshold=200; //白色区域截取灵敏度控制 0-255，存白色为 255
+    cv::Mat displayImage;
 };
 
 

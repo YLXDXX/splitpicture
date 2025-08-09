@@ -25,6 +25,11 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QCursor>
+#include <QToolBar>
+#include <QToolButton>
+#include <QStyle>
+#include <QtConcurrentRun>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -44,6 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+
 }
 
 
@@ -70,8 +76,18 @@ DrawingCanvas::DrawingCanvas(QWidget *parent) : QWidget(parent)
     });
 
     splitPictureAction = new QAction("切割图片", this);
-    connect(splitPictureAction, &QAction::triggered, this, &DrawingCanvas::splitImageByRects);
+    connect(splitPictureAction, &QAction::triggered, this,
+            [this](){DrawingCanvas::splitImageByRects(displayImage,fileName);});
     
+
+    removeWhiteAction = new QAction("去除白边", this);
+    connect(removeWhiteAction, &QAction::triggered, this,
+            [this](){DrawingCanvas::removeWhiteBorder(displayImage);});
+
+    removeAllWhiteAction = new QAction("去除所有白边", this);
+    connect(removeAllWhiteAction, &QAction::triggered, this,
+            [this](){DrawingCanvas::removeAllWhiteBorder(displayImage);});
+
     // 初始背景颜色
     backgroundColor = QColor(30, 30, 40);
 
@@ -308,6 +324,7 @@ void DrawingCanvas::mousePressEvent(QMouseEvent *event)
             contextMenu.addAction(deleteAction);
             contextMenu.addAction(loadImageAction);
             contextMenu.addAction(resetZoomAction);
+            contextMenu.addAction(removeWhiteAction);
             contextMenu.addAction("取消选择", [this]() {
                 selectedRectIndex = -1;
                 update();
@@ -321,6 +338,7 @@ void DrawingCanvas::mousePressEvent(QMouseEvent *event)
             contextMenu.addAction(loadImageAction);
             contextMenu.addAction(resetZoomAction);
             contextMenu.addAction(deleteAllAction);
+            contextMenu.addAction(removeAllWhiteAction);
             contextMenu.addAction(splitPictureAction);
             contextMenu.exec(event->globalPosition().toPoint());
             selectedRectIndex = -1;
@@ -528,9 +546,16 @@ void DrawingCanvas::loadBackgroundImage() {
         QPixmap newImage;
         if (newImage.load(fileName)) {
             backgroundImage = newImage;
-            // 重置缩放和平移
+            displayImage = cv::imread(fileName.toStdString());
+            // 重置缩放和平移，矩形框，判断变量
             zoomFactor = 1.0;
             panOffset = QPoint(0, 0);
+            rectangles.clear();
+            selectedRectIndex=-1;
+            isDrawing = false;
+            isPanning = false;
+            isRecResizing = false;
+            isMoveToRecEdge=false;
             update();
         } else {
             fileName="";
@@ -540,19 +565,11 @@ void DrawingCanvas::loadBackgroundImage() {
 }
 
 //利用矩形切割图片
-void DrawingCanvas::splitImageByRects(void)
+void DrawingCanvas::splitImageByRects(const cv::Mat &Image, const QString imagePath)
 {
-    if(fileName=="")
+    if( Image.empty() || imagePath.isEmpty() )
     {
         QMessageBox::warning(this, "图片未加载", "请选择图片后再操作");
-        return;
-    }
-    const QString imagePath=fileName;
-    const QList<QRectF> rects=rectangles;
-    // 读取原始图像
-    cv::Mat src = cv::imread(imagePath.toStdString());
-    if(src.empty()) {
-        qWarning("Failed to load image: %s", qPrintable(imagePath));
         return;
     }
 
@@ -563,8 +580,8 @@ void DrawingCanvas::splitImageByRects(void)
     QString dirPath = fileInfo.absolutePath();
 
     // 处理每个矩形区域
-    for(int i = 0; i < rects.size(); ++i) {
-        const QRectF& qrect = rects[i];
+    for(int i = 0; i < rectangles.size(); ++i) {
+        const QRectF& qrect = rectangles[i];
 
         // 转换为整数像素坐标（对齐到最近整数）
         int x = static_cast<int>(std::round(qrect.x()));
@@ -575,8 +592,8 @@ void DrawingCanvas::splitImageByRects(void)
         // 边界检查
         if(x < 0) x = 0;
         if(y < 0) y = 0;
-        if(x + width > src.cols) width = src.cols - x;
-        if(y + height > src.rows) height = src.rows - y;
+        if(x + width > Image.cols) width = Image.cols - x;
+        if(y + height > Image.rows) height = Image.rows - y;
 
         // 验证有效区域
         if(width <= 0 || height <= 0) {
@@ -586,7 +603,7 @@ void DrawingCanvas::splitImageByRects(void)
         }
 
         // 提取ROI
-        cv::Mat roi(src, cv::Rect(x, y, width, height));
+        cv::Mat roi(Image, cv::Rect(x, y, width, height));
 
         // 构造输出文件名
         QString outputName = QString("%1/%2_%3.%4")
@@ -690,7 +707,7 @@ QPoint DrawingCanvas::imageToWindow(const QPointF &imagePos)
 }
 
 
-
+// 检测鼠标在所选矩形的哪个边上
 ResizeEdge DrawingCanvas::getResizeEdge(const QPointF &pos)
 {
     bool nearLeft = qAbs(pos.x() - rectangles[selectedRectIndex].left()) <= edgeMargin;
@@ -736,6 +753,80 @@ void DrawingCanvas::setCursorForEdge(ResizeEdge edge)
     }
 }
 
+//去除选中矩形的白边
+void DrawingCanvas::removeWhiteBorder(const cv::Mat &Image)
+{
+    if(Image.empty())
+    {
+        QMessageBox::warning(this, "图片未加载", "请选择图片后再操作");
+        return;
+    }
+
+    cv::Mat img;
+    img=Image(cv::Rect(rectangles[selectedRectIndex].topLeft().x(), rectangles[selectedRectIndex].topLeft().y(),
+            rectangles[selectedRectIndex].width(), rectangles[selectedRectIndex].height()));
+
+    QRectF rect;
+    rect=imgContentRect(img); //得到的区域是相对于切割出来的图而言的，还需要转换到大图的坐标上
+
+    rectangles[selectedRectIndex].setRect(rectangles[selectedRectIndex].topLeft().x()+rect.x(),
+            rectangles[selectedRectIndex].topLeft().y()+rect.y(),
+            rect.width(),
+            rect.height());
+    update();
+}
+
+//去除所有创建矩形所的白边
+void DrawingCanvas::removeAllWhiteBorder(const cv::Mat &Image)
+{
+    if(Image.empty())
+    {
+        QMessageBox::warning(this, "图片未加载", "请选择图片后再操作");
+        return;
+    }
+    cv::Mat img;
+    QRectF rect;
+    for(int i = 0; i < rectangles.size(); ++i)
+    {
+        img=Image(cv::Rect(rectangles[i].topLeft().x(), rectangles[i].topLeft().y(),
+                rectangles[i].width(), rectangles[i].height()));
+        rect=imgContentRect(img); //得到的区域是相对于切割出来的图而言的，还需要转换到大图的坐标上
+        rectangles[i].setRect(rectangles[i].topLeft().x()+rect.x(),
+                rectangles[i].topLeft().y()+rect.y(),
+                rect.width(),
+                rect.height());
+    }
+    update();
+}
+
+//返回图片去除白边后的内容区域
+QRectF DrawingCanvas::imgContentRect(const cv::Mat &img)
+{
+    // 转换为灰度图
+    cv::Mat gray;
+    cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+
+    // 二值化处理：将暗色区域变为白色(255)，亮色区域变为黑色(0)
+    cv::threshold(gray, gray, removeWhiteThreshold, 255, cv::THRESH_BINARY_INV);
+
+    // 查找非零像素坐标
+    std::vector<cv::Point> coords;
+    cv::findNonZero(gray, coords);
+
+    // 计算边界矩形
+    cv::Rect boundingRect = cv::boundingRect(coords);
 
 
+    // 添加内边距
+    int x = std::max(0, boundingRect.x - removeWhitePadding);
+    int y = std::max(0, boundingRect.y - removeWhitePadding);
+    int w = std::min(img.cols - x, boundingRect.width + 2 * removeWhitePadding);
+    int h = std::min(img.rows - y, boundingRect.height + 2 * removeWhitePadding);
 
+    // 裁剪图像
+    //cv::Mat rect = img(cv::Rect(x, y, w, h));// 裁剪图像
+    //cv::imwrite("/home/shui/Music/cropwhitefromimage_result.png", rect());// 保存结果
+
+    QRectF rect(x, y, w, h);
+    return rect;
+}
