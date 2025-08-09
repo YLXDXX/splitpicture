@@ -257,13 +257,12 @@ void DrawingCanvas::paintEvent(QPaintEvent *event)
         QPointF center = rectangles[selectedRectIndex].center();
         QPoint winCenter = imageToWindow(center);
         //painter.drawText(winCenter + QPoint(-50, -10), QString("选中 #%1").arg(selectedRectIndex + 1));
-        QPointF local_topLeft=rectangles[selectedRectIndex].topLeft();
+
         painter.save();// 保存当前画笔设置
         painter.setPen(QColor(255, 165, 0)); // 仅设置文本颜色 橙色
-
         painter.drawText(winCenter + QPoint(-18, 20),QString("(%1,%2)")
-                         .arg(static_cast<int>(std::round(local_topLeft.x()))) // 转换为整数像素坐标（对齐到最近整数）
-                         .arg(static_cast<int>(std::round(local_topLeft.y()))));
+                         .arg(static_cast<int>(std::round(rectangles[selectedRectIndex].width()))) // 转换为整数像素坐标（对齐到最近整数）
+                         .arg(static_cast<int>(std::round(rectangles[selectedRectIndex].height()))));
         painter.restore();// 恢复之前的画笔设置
     }
 }
@@ -768,11 +767,18 @@ void DrawingCanvas::removeWhiteBorder(const cv::Mat &Image)
 
     QRectF rect;
     rect=imgContentRect(img); //得到的区域是相对于切割出来的图而言的，还需要转换到大图的坐标上
-
-    rectangles[selectedRectIndex].setRect(rectangles[selectedRectIndex].topLeft().x()+rect.x(),
-            rectangles[selectedRectIndex].topLeft().y()+rect.y(),
-            rect.width(),
-            rect.height());
+    //有些矩形所在内容全是白色，删除这样的矩形
+    if( rect.width() == 2*removeWhitePadding && rect.height() == 2*removeWhitePadding )
+    {
+        rectangles.remove(selectedRectIndex); //删除矩形框
+        selectedRectIndex = -1;
+    }else
+    {
+        rectangles[selectedRectIndex].setRect(rectangles[selectedRectIndex].topLeft().x()+rect.x(),
+                rectangles[selectedRectIndex].topLeft().y()+rect.y(),
+                rect.width(),
+                rect.height());
+    }
     update();
 }
 
@@ -791,10 +797,18 @@ void DrawingCanvas::removeAllWhiteBorder(const cv::Mat &Image)
         img=Image(cv::Rect(rectangles[i].topLeft().x(), rectangles[i].topLeft().y(),
                 rectangles[i].width(), rectangles[i].height()));
         rect=imgContentRect(img); //得到的区域是相对于切割出来的图而言的，还需要转换到大图的坐标上
-        rectangles[i].setRect(rectangles[i].topLeft().x()+rect.x(),
-                rectangles[i].topLeft().y()+rect.y(),
-                rect.width(),
-                rect.height());
+        //有些矩形所在内容全是白色，删除这样的矩形
+        if( rect.width() == 2*removeWhitePadding && rect.height() == 2*removeWhitePadding )
+        {
+            rectangles.remove(i); //删除矩形框
+            i--;
+        }else
+        {
+            rectangles[i].setRect(rectangles[i].topLeft().x()+rect.x(),
+                    rectangles[i].topLeft().y()+rect.y(),
+                    rect.width(),
+                    rect.height());
+        }
     }
     update();
 }

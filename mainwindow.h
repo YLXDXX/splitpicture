@@ -95,7 +95,7 @@ private:
     bool isMoveToRecEdge=false;
     QRectF resizeOriginalRect;
     const int minimumRecLength=10; //矩形长宽的最小长度
-    const int removeWhitePadding=0;
+    const int removeWhitePadding=5; //截取白边时预留空白
     const int removeWhiteThreshold=200; //白色区域截取灵敏度控制 0-255，存白色为 255
     cv::Mat displayImage;
 };
