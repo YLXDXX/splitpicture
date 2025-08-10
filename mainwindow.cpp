@@ -637,12 +637,6 @@ void DrawingCanvas::splitImageByRects(const cv::Mat &Image,const QString &imageP
                              //.arg(i+1, 2, 10, QLatin1Char('0')) // 两位数序号 01,02,03
                              .arg(QChar('a' + i)) // 字母 a,b,c
                              .arg(suffix);
-
-        // 保存分割后的图像
-        if(1==1) //判断对应的文件是否存在，然后选择略过还是覆盖
-        {
-
-        }
         if(!cv::imwrite(outputName.toStdString(), roi)) {
             qWarning("Failed to write: %s", qPrintable(outputName));
         }
