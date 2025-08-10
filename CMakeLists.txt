@@ -24,6 +24,19 @@ set(PROJECT_SOURCES
         mainwindow.h
 )
 
+# 安装路径
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    # 仅当用户未指定时修改默认值
+    if(UNIX AND NOT APPLE)
+        set(CMAKE_INSTALL_PREFIX "~/.local" CACHE PATH "..." FORCE)
+    elseif(APPLE)
+        set(CMAKE_INSTALL_PREFIX "~/Applications/${PROJECT_NAME}" CACHE PATH "..." FORCE)
+    elseif(WIN32)
+        set(CMAKE_INSTALL_PREFIX "C:/Program Files/${PROJECT_NAME}" CACHE PATH "..." FORCE)
+    endif()
+endif()
+
+
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(splitpicture
         MANUAL_FINALIZATION

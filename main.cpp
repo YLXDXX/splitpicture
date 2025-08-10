@@ -22,8 +22,11 @@ int main(int argc, char *argv[])
     QCommandLineOption inputFilePath("i", "Input file path", "input");
     parser.addOption(inputFilePath);
 
-    QCommandLineOption outputFilePrefix("p", "Output file path prefix", "prefix");
+    QCommandLineOption outputFilePrefix("p", "Output file name prefix", "prefix");
     parser.addOption(outputFilePrefix);
+
+    QCommandLineOption inputFileDirectory("d", "Output file save directory", "directory");
+    parser.addOption(inputFileDirectory);
 
     // 解析命令行参数
     parser.process(app);
@@ -40,11 +43,8 @@ int main(int argc, char *argv[])
     if( parser.isSet(inputFilePath) )
     {
         canvas->fileName = parser.value(inputFilePath);
-
-        if(parser.isSet(outputFilePrefix))
-        {
-            canvas->outputFilePrefix = parser.value(outputFilePrefix);
-        }
+        canvas->outputFilePrefix = parser.value(outputFilePrefix);
+        canvas->outFileDirectory = parser.value(inputFileDirectory);
 
         if( newImage.load(canvas->fileName) )
         {
@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
             QMessageBox::warning(canvas, "加载错误", "无法加载图片: " + canvas->fileName);
             canvas->fileName="";
             canvas->outputFilePrefix="";
+            canvas->outFileDirectory="";
         }
     }
 

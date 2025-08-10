@@ -77,7 +77,7 @@ DrawingCanvas::DrawingCanvas(QWidget *parent) : QWidget(parent)
 
     splitPictureAction = new QAction("切割图片", this);
     connect(splitPictureAction, &QAction::triggered, this,
-            [this](){DrawingCanvas::splitImageByRects(displayImage,fileName,outputFilePrefix);});
+            [this](){DrawingCanvas::splitImageByRects(displayImage,fileName,outFileDirectory,outputFilePrefix);});
     
 
     removeWhiteAction = new QAction("去除白边", this);
@@ -255,6 +255,13 @@ void DrawingCanvas::paintEvent(QPaintEvent *event)
         painter.drawText(10, 100, QString("矩形数量: %1 | 绘制时间: %2ms")
                          .arg(rectangles.size())
                          .arg(timer.elapsed()) );
+    }else
+    {
+        painter.drawText(10, 20, QString("矩形数量: %1 | 绘制时间: %2ms")
+                         .arg(rectangles.size())
+                         .arg(timer.elapsed()) );
+        painter.drawText(10, 40, QString("Output: %1").arg(outFileDirectory) );
+        painter.drawText(10, 60, QString("Prefix: %1").arg(outputFilePrefix) );
     }
 
 
@@ -583,7 +590,8 @@ void DrawingCanvas::loadBackgroundImage() {
 }
 
 //利用画出的矩形切割图片，并保存
-void DrawingCanvas::splitImageByRects(const cv::Mat &Image,const QString &imagePath, const QString &Prefix)
+void DrawingCanvas::splitImageByRects(const cv::Mat &Image, const QString &imagePath,
+                                      const QString &Dir, const QString &Prefix)
 {
     if( Image.empty() || imagePath.isEmpty() )
     {
@@ -602,7 +610,15 @@ void DrawingCanvas::splitImageByRects(const cv::Mat &Image,const QString &imageP
         baseName = Prefix;
     }
     QString suffix = fileInfo.suffix();
-    QString dirPath = fileInfo.absolutePath();
+    QString dirPath;
+    if(Dir.isEmpty())
+    {
+        dirPath = fileInfo.absolutePath();
+    }else
+    {
+        dirPath = Dir;
+    }
+    
 
     // 处理每个矩形区域
     for(int i = 0; i < rectangles.size(); ++i) {

@@ -48,6 +48,7 @@ class DrawingCanvas : public QWidget
 public:
     QString fileName="";
     QString outputFilePrefix="";
+    QString outFileDirectory="";
     QPixmap backgroundImage; //显示图片
     cv::Mat displayImage; //显示图片
 
@@ -61,8 +62,8 @@ public:
     void deleteSelectedRectangle(); //删除矩形框
     void deleteAllRectangle(); //删除所有矩形框
     void loadBackgroundImage(); //加载图片并显示
-    void splitImageByRects(const cv::Mat &Image,const QString &imagePath,
-                           const QString &Prefix); //利用画出的矩形切割图片，并保存
+    void splitImageByRects(const cv::Mat &Image, const QString &imagePath,
+                           const QString &Dir, const QString &Prefix); //利用画出的矩形切割图片，并保存
     QRectF imgContentRect(const cv::Mat &img); //返回图片去除白边后的内容区域
     void removeWhiteBorder(const cv::Mat &Image); //去除选中矩形的白边
     void removeAllWhiteBorder(const cv::Mat &Image); //去除所有创建矩形所的白边
