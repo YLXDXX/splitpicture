@@ -77,7 +77,7 @@ DrawingCanvas::DrawingCanvas(QWidget *parent) : QWidget(parent)
 
     splitPictureAction = new QAction("切割图片", this);
     connect(splitPictureAction, &QAction::triggered, this,
-            [this](){DrawingCanvas::splitImageByRects(displayImage,fileName);});
+            [this](){DrawingCanvas::splitImageByRects(displayImage,fileName,outputFilePrefix);});
     
 
     removeWhiteAction = new QAction("去除白边", this);
@@ -113,6 +113,7 @@ void DrawingCanvas::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter.setFont(QFont("Arial", 10, QFont::Bold));
 
     // 绘制背景
     painter.fillRect(rect(), backgroundColor);
@@ -165,7 +166,6 @@ void DrawingCanvas::paintEvent(QPaintEvent *event)
         // 在矩形中心绘制编号
         QPoint center = imageToWindow(rect.center());
         painter.setPen(Qt::white);
-        painter.setFont(QFont("Arial", 10, QFont::Bold));
         painter.drawText(center, QString::number(i + 1));
     }
 
@@ -245,14 +245,18 @@ void DrawingCanvas::paintEvent(QPaintEvent *event)
     }
 
     // 绘制状态信息
-    painter.setPen(Qt::white);
-    painter.drawText(10, 20, "左键点击并拖动: 绘制新矩形");
-    painter.drawText(10, 40, "右键点击矩形: 选择/删除矩形");
-    painter.drawText(10, 60, "拖动已选矩形: 移动矩形位置");
-    painter.drawText(10, 80, "滚轮: 缩放视图 | 中键: 平移视图");
-    painter.drawText(10, 100, QString("矩形数量: %1 | 绘制时间: %2ms")
-                     .arg(rectangles.size())
-                     .arg(timer.elapsed()) );
+    if (backgroundImage.isNull()) //添加图片后就不再显示
+    {
+        painter.setPen(Qt::white);
+        painter.drawText(10, 20, "左键点击并拖动: 绘制新矩形");
+        painter.drawText(10, 40, "右键点击矩形: 选择/删除矩形");
+        painter.drawText(10, 60, "拖动已选矩形: 移动矩形位置");
+        painter.drawText(10, 80, "滚轮: 缩放视图 | 中键: 平移视图");
+        painter.drawText(10, 100, QString("矩形数量: %1 | 绘制时间: %2ms")
+                         .arg(rectangles.size())
+                         .arg(timer.elapsed()) );
+    }
+
 
     //绘制当前选中信息，选中矩形后的提示信息
     if (selectedRectIndex >= 0 && selectedRectIndex < rectangles.size()) {
@@ -572,14 +576,14 @@ void DrawingCanvas::loadBackgroundImage() {
             isMoveToRecEdge=false;
             update();
         } else {
-            fileName="";
             QMessageBox::warning(this, "加载错误", "无法加载图片: " + fileName);
+            fileName="";
         }
     }
 }
 
-//利用矩形切割图片
-void DrawingCanvas::splitImageByRects(const cv::Mat &Image, const QString imagePath)
+//利用画出的矩形切割图片，并保存
+void DrawingCanvas::splitImageByRects(const cv::Mat &Image,const QString &imagePath, const QString &Prefix)
 {
     if( Image.empty() || imagePath.isEmpty() )
     {
@@ -589,7 +593,14 @@ void DrawingCanvas::splitImageByRects(const cv::Mat &Image, const QString imageP
 
     // 准备文件名组件
     QFileInfo fileInfo(imagePath);
-    QString baseName = fileInfo.completeBaseName();
+     QString baseName;
+    if(Prefix.isEmpty())
+    {
+        baseName = fileInfo.completeBaseName();
+    }else
+    {
+        baseName = Prefix;
+    }
     QString suffix = fileInfo.suffix();
     QString dirPath = fileInfo.absolutePath();
 
@@ -623,10 +634,15 @@ void DrawingCanvas::splitImageByRects(const cv::Mat &Image, const QString imageP
         QString outputName = QString("%1/%2_%3.%4")
                              .arg(dirPath)
                              .arg(baseName)
-                             .arg(i+1, 2, 10, QLatin1Char('0')) // 两位数序号
+                             //.arg(i+1, 2, 10, QLatin1Char('0')) // 两位数序号 01,02,03
+                             .arg(QChar('a' + i)) // 字母 a,b,c
                              .arg(suffix);
 
         // 保存分割后的图像
+        if(1==1) //判断对应的文件是否存在，然后选择略过还是覆盖
+        {
+
+        }
         if(!cv::imwrite(outputName.toStdString(), roi)) {
             qWarning("Failed to write: %s", qPrintable(outputName));
         }
@@ -722,7 +738,7 @@ QPoint DrawingCanvas::imageToWindow(const QPointF &imagePos)
 
 
 // 检测鼠标在所选矩形的哪个边上
-ResizeEdge DrawingCanvas::getResizeEdge(const QPointF &pos)
+DrawingCanvas::ResizeEdge DrawingCanvas::getResizeEdge(const QPointF &pos)
 {
     bool nearLeft = qAbs(pos.x() - rectangles[selectedRectIndex].left()) <= edgeMargin;
     bool nearRight = qAbs(pos.x() - rectangles[selectedRectIndex].right()) <= edgeMargin;

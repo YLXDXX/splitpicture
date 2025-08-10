@@ -42,11 +42,16 @@ private:
 };
 
 
-enum ResizeEdge { None, Left, Right, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight };
 class DrawingCanvas : public QWidget
 {
     Q_OBJECT
 public:
+    QString fileName="";
+    QString outputFilePrefix="";
+    QPixmap backgroundImage; //显示图片
+    cv::Mat displayImage; //显示图片
+
+    enum ResizeEdge { None, Left, Right, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight };
     DrawingCanvas(QWidget *parent = nullptr); //构建函数，初始化
     QPointF windowToImage(const QPoint &windowPos); // 将窗口坐标转换为图片坐标
     QPoint imageToWindow(const QPointF &imagePos); // 将图片坐标转换为窗口坐标
@@ -56,7 +61,8 @@ public:
     void deleteSelectedRectangle(); //删除矩形框
     void deleteAllRectangle(); //删除所有矩形框
     void loadBackgroundImage(); //加载图片并显示
-    void splitImageByRects(const cv::Mat &Image,const QString imagePath); //利用画出的矩形切割图片
+    void splitImageByRects(const cv::Mat &Image,const QString &imagePath,
+                           const QString &Prefix); //利用画出的矩形切割图片，并保存
     QRectF imgContentRect(const cv::Mat &img); //返回图片去除白边后的内容区域
     void removeWhiteBorder(const cv::Mat &Image); //去除选中矩形的白边
     void removeAllWhiteBorder(const cv::Mat &Image); //去除所有创建矩形所的白边
@@ -80,7 +86,7 @@ private:
     QVector<QRectF> rectangles; // 存储图片坐标系的矩形
     int selectedRectIndex = -1;
     QPointF dragOffset;
-    QPoint panOffset;
+    QPoint panOffset=QPoint(0, 0);
     QAction *deleteAction;
     QAction *deleteAllAction;
     QAction *loadImageAction;
@@ -89,16 +95,14 @@ private:
     QAction *removeWhiteAction;
     QAction *removeAllWhiteAction;
     QAction *addWhiteBorderOrigPictureAction;
-    QPixmap backgroundImage; //显示原图
-    cv::Mat displayImage; //显示原图
     QColor backgroundColor;
-    QString fileName="";
     double zoomFactor = 1.0;
-    ResizeEdge m_resizeEdge = None;
+    ResizeEdge m_resizeEdge = ResizeEdge::None;
     const int edgeMargin = 5; // 边框检测灵敏度
     bool isRecResizing = false;
     bool isMoveToRecEdge=false;
     QRectF resizeOriginalRect;
+    QRectF resizeRect;
     const int minimumRecLength=10; //矩形长宽的最小长度
     const int removeWhitePadding=5; //截取白边时预留空白
     const int removeWhiteThreshold=200; //白色区域截取灵敏度控制 0-255，存白色为 255
