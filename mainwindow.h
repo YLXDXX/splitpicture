@@ -60,6 +60,9 @@ public:
     QRectF imgContentRect(const cv::Mat &img); //返回图片去除白边后的内容区域
     void removeWhiteBorder(const cv::Mat &Image); //去除选中矩形的白边
     void removeAllWhiteBorder(const cv::Mat &Image); //去除所有创建矩形所的白边
+    QPixmap CvMatToQPixmap(const cv::Mat& mat); // OpenCV 用的图像格式转为 Qt 用的图像格式
+    cv::Mat QPixmapToCvMat(const QPixmap& pixmap); // Qt 用的图像格式转为 OpenCV 用的图像格式
+    void addWhiteBorderOrigPicture(); //为显示的原图增加白边
 protected:
     void paintEvent(QPaintEvent *event) override ; //窗口中显示界面绘制
     void mousePressEvent(QMouseEvent *event) override; //鼠标按键按下行为
@@ -85,7 +88,9 @@ private:
     QAction *splitPictureAction;
     QAction *removeWhiteAction;
     QAction *removeAllWhiteAction;
-    QPixmap backgroundImage;
+    QAction *addWhiteBorderOrigPictureAction;
+    QPixmap backgroundImage; //显示原图
+    cv::Mat displayImage; //显示原图
     QColor backgroundColor;
     QString fileName="";
     double zoomFactor = 1.0;
@@ -97,7 +102,8 @@ private:
     const int minimumRecLength=10; //矩形长宽的最小长度
     const int removeWhitePadding=5; //截取白边时预留空白
     const int removeWhiteThreshold=200; //白色区域截取灵敏度控制 0-255，存白色为 255
-    cv::Mat displayImage;
+    const int addWhiteBorderPaddingOrig=50; //原图增加白边区域大小
+    bool isClickImageRegion; //判断点击位置是否位于图像区域内
 };
 
 

@@ -88,6 +88,9 @@ DrawingCanvas::DrawingCanvas(QWidget *parent) : QWidget(parent)
     connect(removeAllWhiteAction, &QAction::triggered, this,
             [this](){DrawingCanvas::removeAllWhiteBorder(displayImage);});
 
+    addWhiteBorderOrigPictureAction = new QAction("原图加白边", this);
+    connect(addWhiteBorderOrigPictureAction, &QAction::triggered, this,&DrawingCanvas::addWhiteBorderOrigPicture);
+
     // 初始背景颜色
     backgroundColor = QColor(30, 30, 40);
 
@@ -304,6 +307,14 @@ void DrawingCanvas::mousePressEvent(QMouseEvent *event)
         }
 
     }else if (event->button() == Qt::RightButton) {
+        //如何点击是否在图片区域内，根据点击的区域，显示不同的菜单
+        if( getImageDisplayRect().contains(event->pos()) )
+        {
+            isClickImageRegion=true;
+        } else {
+            isClickImageRegion=false;
+        }
+
         // 右键选择矩形
         int newSelection = -1;
         for (int i = 0; i < rectangles.size(); ++i) {
@@ -339,6 +350,10 @@ void DrawingCanvas::mousePressEvent(QMouseEvent *event)
             contextMenu.addAction(deleteAllAction);
             contextMenu.addAction(removeAllWhiteAction);
             contextMenu.addAction(splitPictureAction);
+            if(!isClickImageRegion)
+            {
+                contextMenu.addAction(addWhiteBorderOrigPictureAction);
+            }
             contextMenu.exec(event->globalPosition().toPoint());
             selectedRectIndex = -1;
         }
@@ -844,3 +859,76 @@ QRectF DrawingCanvas::imgContentRect(const cv::Mat &img)
     QRectF rect(x, y, w, h);
     return rect;
 }
+
+// Qt 用的图像格式转为 OpenCV 用的图像格式
+cv::Mat DrawingCanvas::QPixmapToCvMat(const QPixmap& pixmap)
+{
+    // 将QPixmap转换为32位RGB格式的QImage
+    QImage image = pixmap.toImage().convertToFormat(QImage::Format_RGB888);
+
+    // 创建cv::Mat并复制数据
+    cv::Mat mat(image.height(), image.width(), CV_8UC3,
+               const_cast<uchar*>(image.bits()),
+               static_cast<size_t>(image.bytesPerLine()));
+
+    // 克隆数据以避免Qt释放内存后出现悬空指针
+    cv::Mat result = mat.clone();
+
+    // OpenCV使用BGR格式，所以需要转换RGB->BGR
+    cv::cvtColor(result, result, cv::COLOR_RGB2BGR);
+    return result;
+}
+
+// OpenCV 用的图像格式转为 Qt 用的图像格式
+QPixmap DrawingCanvas::CvMatToQPixmap(const cv::Mat& mat) {
+    // 确保输入Mat有效
+    if(mat.empty())
+        return QPixmap();
+
+    // 处理颜色空间：BGR->RGB 或 GRAY->RGB
+    cv::Mat rgbMat;
+    switch(mat.channels()) {
+    case 1:
+        cv::cvtColor(mat, rgbMat, cv::COLOR_GRAY2RGB);
+        break;
+    case 3:
+        cv::cvtColor(mat, rgbMat, cv::COLOR_BGR2RGB);
+        break;
+    case 4:
+        cv::cvtColor(mat, rgbMat, cv::COLOR_BGRA2RGBA);
+        break;
+    default:
+        return QPixmap(); // 不支持的通道数
+    }
+
+    // 创建QImage
+    QImage image(rgbMat.data,
+                rgbMat.cols,
+                rgbMat.rows,
+                static_cast<int>(rgbMat.step),
+                (rgbMat.channels() == 4) ? QImage::Format_RGBA8888
+                                         : QImage::Format_RGB888);
+
+    // 必须复制数据，因为QImage不接管Mat的内存
+    return QPixmap::fromImage(image.copy());
+}
+
+//为显示的原图增加白边
+void DrawingCanvas::addWhiteBorderOrigPicture()
+{
+    //Add a white border around the cropped image
+    cv::copyMakeBorder(displayImage, displayImage,
+                   addWhiteBorderPaddingOrig, addWhiteBorderPaddingOrig,
+                   addWhiteBorderPaddingOrig, addWhiteBorderPaddingOrig,
+                   cv::BORDER_CONSTANT, cv::Scalar(255, 255, 255));
+    backgroundImage=CvMatToQPixmap(displayImage);
+    //若已有矩形，则还需更新矩形坐标
+    if(!rectangles.isEmpty())
+    {
+        for (QRectF& rect : rectangles) {
+                rect.translate(addWhiteBorderPaddingOrig, addWhiteBorderPaddingOrig); //移动 (dx, dy)
+            }
+    }
+}
+
+
