@@ -109,6 +109,7 @@ private:
     const int removeWhiteThreshold=200; //白色区域截取灵敏度控制 0-255，存白色为 255
     const int addWhiteBorderPaddingOrig=50; //原图增加白边区域大小
     bool isClickImageRegion; //判断点击位置是否位于图像区域内
+    int clickRectNumber; //在调整矩形大小时，用于记录点击的矩形编号
 };
 
 

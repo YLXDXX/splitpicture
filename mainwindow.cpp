@@ -194,7 +194,7 @@ void DrawingCanvas::paintEvent(QPaintEvent *event)
     }
 
     //选中后矩形大小的缩放
-    if( isMoveToRecEdge && isRecResizing && selectedRectIndex != -1 )
+    if( isMoveToRecEdge && isRecResizing && selectedRectIndex == clickRectNumber )
     {
         resizeOriginalRect = rectangles[selectedRectIndex]; // 保存原始矩形
         QPointF imgCurrent = windowToImage(currentPoint);
@@ -292,7 +292,7 @@ void DrawingCanvas::mousePressEvent(QMouseEvent *event)
 
     if (event->button() == Qt::LeftButton) {
 
-        if(isMoveToRecEdge){ //用于矩形大小的缩放
+        if( isMoveToRecEdge && rectangles[selectedRectIndex].contains(windowToImage(event->pos())) ){ //用于矩形大小的缩放
             isRecResizing=true;
         }else
         {
@@ -310,7 +310,12 @@ void DrawingCanvas::mousePressEvent(QMouseEvent *event)
                 break;
             }
         }
-
+        
+        if(isRecResizing)
+        {
+            selectedRectIndex=clickRectNumber; //多个矩形重叠，选中某个矩形后，由此可调整该矩形的大小
+        }
+        
         // 如果没有选中矩形，开始绘制新矩形
         if (selectedRectIndex == -1) {
             isDrawing = true;
@@ -395,6 +400,7 @@ void DrawingCanvas::mouseMoveEvent(QMouseEvent *event)
         setCursorForEdge(m_resizeEdge);//更新鼠标光标形状
         if (m_resizeEdge != None)
         {
+            clickRectNumber=selectedRectIndex;
             isMoveToRecEdge=true;
         }else
         {
