@@ -660,14 +660,26 @@ void DrawingCanvas::splitImageByRects(const cv::Mat &Image, const QString &image
         cv::Mat roi(Image, cv::Rect(x, y, width, height));
 
         // 构造输出文件名
-        QString outputName = QString("%1/%2_%3.%4")
-                             .arg(dirPath)
-                             .arg(baseName)
-                             //.arg(i+1, 2, 10, QLatin1Char('0')) // 两位数序号 01,02,03
-                             .arg(QChar('a' + i)) // 字母 a,b,c
-                             .arg(suffix);
+        QString outputName;
+        if(rectangles.size()==1)
+        {
+            outputName = QString("%1/%2.%3")
+                                 .arg(dirPath)
+                                 .arg(baseName)
+                                 .arg(suffix);
+        }else
+        {
+            outputName = QString("%1/%2%3.%4")
+                                 .arg(dirPath)
+                                 .arg(baseName)
+                                 //.arg(i+1, 2, 10, QLatin1Char('0')) // 两位数序号 01,02,03
+                                 .arg(QChar('a' + i)) // 字母 a,b,c
+                                 .arg(suffix);
+        }
+
         if(!cv::imwrite(outputName.toStdString(), roi)) {
             qWarning("Failed to write: %s", qPrintable(outputName));
+            QMessageBox::warning(this, "图片保存失败", QString("Failed to write: %1").arg(outputName));
         }
     }
 }
