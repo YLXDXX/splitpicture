@@ -27,7 +27,10 @@ int main(int argc, char *argv[])
 
     QCommandLineOption inputFileDirectory("d", "Output file save directory", "directory");
     parser.addOption(inputFileDirectory);
-
+    
+    QCommandLineOption openAddWhiteBorder("a", "Add White Border", "add");
+    parser.addOption(openAddWhiteBorder);
+    
     // 解析命令行参数
     parser.process(app);
 
@@ -45,12 +48,19 @@ int main(int argc, char *argv[])
         canvas->fileName = parser.value(inputFilePath);
         canvas->outputFilePrefix = parser.value(outputFilePrefix);
         canvas->outFileDirectory = parser.value(inputFileDirectory);
-
+        canvas->openAddWhiteBorderPaddingOrig = parser.value(openAddWhiteBorder).toInt();
         if( newImage.load(canvas->fileName) )
         {
             canvas->backgroundImage = newImage;
             canvas->displayImage = cv::imread(canvas->fileName.toStdString());
             canvas->fileName = parser.value(inputFilePath);
+
+            if(canvas->openAddWhiteBorderPaddingOrig != -1)
+            {
+                //加载图片的同时添加白边框
+                canvas->addWhiteBorderOrigPicture(canvas->openAddWhiteBorderPaddingOrig);
+            }
+
         }else
         {
             QMessageBox::warning(canvas, "加载错误", "无法加载图片: " + canvas->fileName);

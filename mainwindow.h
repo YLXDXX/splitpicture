@@ -49,6 +49,8 @@ public:
     QString fileName="";
     QString outputFilePrefix="";
     QString outFileDirectory="";
+    int openAddWhiteBorderPaddingOrig=-1; //在第一次打开图片时，就添加白边
+    
     QPixmap backgroundImage; //显示图片
     cv::Mat displayImage; //显示图片
 
@@ -69,7 +71,7 @@ public:
     void removeAllWhiteBorder(const cv::Mat &Image); //去除所有创建矩形所的白边
     QPixmap CvMatToQPixmap(const cv::Mat& mat); // OpenCV 用的图像格式转为 Qt 用的图像格式
     cv::Mat QPixmapToCvMat(const QPixmap& pixmap); // Qt 用的图像格式转为 OpenCV 用的图像格式
-    void addWhiteBorderOrigPicture(); //为显示的原图增加白边
+    void addWhiteBorderOrigPicture(const int& padding); //为显示的原图增加白边
 protected:
     void paintEvent(QPaintEvent *event) override ; //窗口中显示界面绘制
     void mousePressEvent(QMouseEvent *event) override; //鼠标按键按下行为

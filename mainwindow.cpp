@@ -89,7 +89,8 @@ DrawingCanvas::DrawingCanvas(QWidget *parent) : QWidget(parent)
             [this](){DrawingCanvas::removeAllWhiteBorder(displayImage);});
 
     addWhiteBorderOrigPictureAction = new QAction("原图加白边", this);
-    connect(addWhiteBorderOrigPictureAction, &QAction::triggered, this,&DrawingCanvas::addWhiteBorderOrigPicture);
+    connect(addWhiteBorderOrigPictureAction, &QAction::triggered, this,
+            [this](){DrawingCanvas::addWhiteBorderOrigPicture(addWhiteBorderPaddingOrig);});
 
     // 初始背景颜色
     backgroundColor = QColor(30, 30, 40);
@@ -578,6 +579,12 @@ void DrawingCanvas::loadBackgroundImage() {
         if (newImage.load(fileName)) {
             backgroundImage = newImage;
             displayImage = cv::imread(fileName.toStdString());
+
+            if(openAddWhiteBorderPaddingOrig != -1)
+            {
+                //加载图片的同时添加白边框
+                DrawingCanvas::addWhiteBorderOrigPicture(openAddWhiteBorderPaddingOrig);
+            }
             // 重置缩放和平移，矩形框，判断变量
             zoomFactor = 1.0;
             panOffset = QPoint(0, 0);
@@ -946,19 +953,19 @@ QPixmap DrawingCanvas::CvMatToQPixmap(const cv::Mat& mat) {
 }
 
 //为显示的原图增加白边
-void DrawingCanvas::addWhiteBorderOrigPicture()
+void DrawingCanvas::addWhiteBorderOrigPicture(const int& padding)
 {
     //Add a white border around the cropped image
     cv::copyMakeBorder(displayImage, displayImage,
-                   addWhiteBorderPaddingOrig, addWhiteBorderPaddingOrig,
-                   addWhiteBorderPaddingOrig, addWhiteBorderPaddingOrig,
+                   padding, padding,
+                   padding, padding,
                    cv::BORDER_CONSTANT, cv::Scalar(255, 255, 255));
     backgroundImage=CvMatToQPixmap(displayImage);
     //若已有矩形，则还需更新矩形坐标
     if(!rectangles.isEmpty())
     {
         for (QRectF& rect : rectangles) {
-                rect.translate(addWhiteBorderPaddingOrig, addWhiteBorderPaddingOrig); //移动 (dx, dy)
+                rect.translate(padding, padding); //移动 (dx, dy)
             }
     }
 }
