@@ -585,6 +585,11 @@ void DrawingCanvas::loadBackgroundImage() {
                 //加载图片的同时添加白边框
                 DrawingCanvas::addWhiteBorderOrigPicture(openAddWhiteBorderPaddingOrig);
             }
+
+            // 在窗口标题栏里加入处理图片的名称
+            QFileInfo fileInfo(fileName);
+            DrawingCanvas::triggerTitleChange("SplitPicture & "+fileInfo.completeBaseName());
+
             // 重置缩放和平移，矩形框，判断变量
             zoomFactor = 1.0;
             panOffset = QPoint(0, 0);
@@ -980,6 +985,12 @@ void DrawingCanvas::addWhiteBorderOrigPicture(const int& padding)
                 rect.translate(padding, padding); //移动 (dx, dy)
             }
     }
+}
+
+
+void DrawingCanvas::triggerTitleChange(const QString & title)
+{
+    emit titleChangeRequested(title);
 }
 
 

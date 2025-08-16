@@ -72,6 +72,7 @@ public:
     QPixmap CvMatToQPixmap(const cv::Mat& mat); // OpenCV 用的图像格式转为 Qt 用的图像格式
     cv::Mat QPixmapToCvMat(const QPixmap& pixmap); // Qt 用的图像格式转为 OpenCV 用的图像格式
     void addWhiteBorderOrigPicture(const int& padding); //为显示的原图增加白边
+    void triggerTitleChange(const QString & string); //用于触发更改标题的信号
 protected:
     void paintEvent(QPaintEvent *event) override ; //窗口中显示界面绘制
     void mousePressEvent(QMouseEvent *event) override; //鼠标按键按下行为
@@ -79,6 +80,8 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override; //鼠标按键释放行为
     void wheelEvent(QWheelEvent *event) override; //滚轮行为：放大缩小视图
     void resizeEvent(QResizeEvent *event) override; //窗口大小改变：居中显示
+signals:
+    void titleChangeRequested(const QString &newTitle); // 声明更改标题的信号
 private:
     bool isDrawing = false;
     bool isPanning = false;

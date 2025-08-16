@@ -27,19 +27,23 @@ int main(int argc, char *argv[])
 
     QCommandLineOption inputFileDirectory("d", "Output file save directory", "directory");
     parser.addOption(inputFileDirectory);
-    
+
     QCommandLineOption openAddWhiteBorder("a", "Add White Border", "add");
     parser.addOption(openAddWhiteBorder);
-    
+
     // 解析命令行参数
     parser.process(app);
 
     MainWindow w;
 
-    w.setWindowTitle("图像切割");
+    w.setWindowTitle("SplitPicture");
 
     DrawingCanvas *canvas = new DrawingCanvas();
     w.setCentralWidget(canvas);
+
+    // 连接信号到槽（可以连接不同类里的信号）
+    QObject::connect(canvas, &DrawingCanvas::titleChangeRequested,
+            &w, &MainWindow::setWindowTitle);
 
     //检查命令行参数是否存在
     QPixmap newImage;
@@ -49,6 +53,7 @@ int main(int argc, char *argv[])
         canvas->outputFilePrefix = parser.value(outputFilePrefix);
         canvas->outFileDirectory = parser.value(inputFileDirectory);
         canvas->openAddWhiteBorderPaddingOrig = parser.value(openAddWhiteBorder).toInt();
+
         if( newImage.load(canvas->fileName) )
         {
             canvas->backgroundImage = newImage;
@@ -60,13 +65,16 @@ int main(int argc, char *argv[])
                 //加载图片的同时添加白边框
                 canvas->addWhiteBorderOrigPicture(canvas->openAddWhiteBorderPaddingOrig);
             }
-
+            // 在窗口标题栏里加入处理图片的名称
+            QFileInfo fileInfo(canvas->fileName);
+            canvas->triggerTitleChange("SplitPicture & "+fileInfo.completeBaseName());
         }else
         {
             QMessageBox::warning(canvas, "加载错误", "无法加载图片: " + canvas->fileName);
             canvas->fileName="";
             canvas->outputFilePrefix="";
             canvas->outFileDirectory="";
+            canvas->openAddWhiteBorderPaddingOrig = -1;
         }
     }
 
