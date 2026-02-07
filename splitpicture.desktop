@@ -1,0 +1,16 @@
+[Desktop Entry]
+Name=splitpicture
+GenericName=Picture split
+Exec=splitpicture -i "%f"
+Type=Application
+StartupNotify=true
+Icon=splitpicture.png
+StartupWMClass=splitpicture
+Terminal=false
+Categories=Graphics
+Actions=View
+MimeType=image/png;image/jpg;image/jpeg;image/pjpeg;image/bmp;image/tif;image/tiff;image/webp;
+[Desktop Action View]
+Name=Open with SP
+Icon=splitpicture.png
+Exec=splitpicture -i "%f"

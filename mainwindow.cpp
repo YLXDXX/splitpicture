@@ -20,7 +20,12 @@
 #include <QElapsedTimer>
 #include <QList>
 #include <QRectF>
-#include <opencv4/opencv2/opencv.hpp>
+
+// #include <opencv4/opencv2/opencv.hpp>  // 不需要包含整个为 OpenCV，按需取用
+#include <opencv4/opencv2/core.hpp>        // cv::Mat, cv::Rect, 基本类型
+#include <opencv4/opencv2/imgproc.hpp>     // cv::cvtColor, cv::threshold, cv::findNonZero, cv::boundingRect, cv::copyMakeBorder
+#include <opencv4/opencv2/imgcodecs.hpp>   // cv::imread, cv::imwrite
+
 
 #include <QScreen>
 #include <QGuiApplication>
