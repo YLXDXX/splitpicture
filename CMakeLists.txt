@@ -56,9 +56,15 @@ set(PROJECT_DESKTOP_FILE ${PROJECT_NAME}.desktop)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
 
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
+        src/main.cpp
+        src/mainwindow.h
+        src/mainwindow.cpp
+        src/drawingcanvas.h
+        src/drawingcanvas.cpp
+        src/imageprocessor.h
+        src/imageprocessor.cpp
+        src/commandlineoptions.h
+        src/commandlineoptions.cpp
 )
 
 qt_add_executable(splitpicture
