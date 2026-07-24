@@ -76,11 +76,17 @@ QRectF ImageProcessor::getContentRect(const cv::Mat& img, int threshold, int pad
         return QRectF(padding, padding, 2 * padding, 2 * padding);
     }
 
-    cv::Rect boundingRect = cv::boundingRect(coords);
-    int x = std::max(0, boundingRect.x - padding);
-    int y = std::max(0, boundingRect.y - padding);
-    int w = std::min(img.cols - x, boundingRect.width + 2 * padding);
-    int h = std::min(img.rows - y, boundingRect.height + 2 * padding);
+    int x_min = img.cols, y_min = img.rows, x_max = 0, y_max = 0;
+    for (const auto& pt : coords) {
+        if (pt.x < x_min) x_min = pt.x;
+        if (pt.y < y_min) y_min = pt.y;
+        if (pt.x > x_max) x_max = pt.x;
+        if (pt.y > y_max) y_max = pt.y;
+    }
+    int x = std::max(0, x_min - padding);
+    int y = std::max(0, y_min - padding);
+    int w = std::min(img.cols - x, (x_max - x_min) + 2 * padding);
+    int h = std::min(img.rows - y, (y_max - y_min) + 2 * padding);
 
     return QRectF(x, y, w, h);
 }
